@@ -1,12 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CommandBus } from '@nestjs/cqrs';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/database/prisma.service';
 import { CreateMockCommand } from '@/modules/mock/commands/create-mock.command';
 import { CreateMockDto } from '@/modules/mock/dto/create-mock.dto';
-import { UpdateMockDto } from '@/modules/mock/dto/update-mock.dto';
 import { QueryMockDto } from '@/modules/mock/dto/query-mock.dto';
+import { UpdateMockDto } from '@/modules/mock/dto/update-mock.dto';
 import { MockEntity } from '@/modules/mock/entities/mock.entity';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { CommandBus } from '@nestjs/cqrs';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class MockService {
@@ -16,9 +16,7 @@ export class MockService {
   ) {}
 
   create(dto: CreateMockDto): Promise<MockEntity> {
-    return this.commandBus.execute<CreateMockCommand, MockEntity>(
-      new CreateMockCommand(dto),
-    );
+    return this.commandBus.execute<CreateMockCommand, MockEntity>(new CreateMockCommand(dto));
   }
 
   async findAll(query: QueryMockDto): Promise<{
@@ -42,7 +40,7 @@ export class MockService {
     ]);
 
     return {
-      items: items.map((item) => new MockEntity(item)),
+      items: items.map((item: any) => new MockEntity(item)),
       total,
       take: query.take,
       skip: query.skip,

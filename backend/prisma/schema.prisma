@@ -7,19 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-/// Placeholder for the User domain. Fields intentionally minimal.
-model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  displayName  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  @@map("users")
 }
 
 /// Sample entity used by MockModule to demonstrate CRUD wiring.
@@ -32,4 +19,25 @@ model Mock {
   updatedAt   DateTime @updatedAt
 
   @@map("mocks")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  wallet       Wallet?
+
+  @@map("users")
+}
+
+model Wallet {
+  id          String   @id @default(uuid())
+  balance     Int      @default(0)
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @unique
+
+  @@map("wallet")
 }

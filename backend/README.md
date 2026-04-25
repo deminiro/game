@@ -1,6 +1,6 @@
 # Game Backend
 
-NestJS + PostgreSQL scaffold for a game backend with domain module placeholders (`Auth`, `User`, `Game`, `Payments`) and a working `Mock` CRUD module to demonstrate the full stack.
+NestJS + PostgreSQL scaffold for a game backend with domain module placeholders (`Auth`, `User`, `Game`, `Wallet`) and a working `Mock` CRUD module to demonstrate the full stack.
 
 ## Stack
 
@@ -42,19 +42,19 @@ Set `DATABASE_URL` in `.env` to `postgresql://postgres:postgres@localhost:5432/g
 
 ## Useful commands
 
-| Command | What it does |
-| --- | --- |
-| `npm run start:dev` | Start Nest with watch mode |
-| `npm run build` | Compile to `dist/` |
-| `npm run start:prod` | Run compiled app |
-| `npm run lint` | ESLint with auto-fix |
-| `npm run format` | Prettier write |
-| `npm test` | Unit tests |
-| `npm run prisma:generate` | Regenerate Prisma client |
-| `npm run prisma:migrate` | Create/apply dev migration |
-| `npm run prisma:migrate:deploy` | Apply migrations in CI/prod |
-| `npm run prisma:studio` | Open Prisma Studio |
-| `npm run db:reset` | Drop + recreate DB (dev only) |
+| Command                         | What it does                  |
+| ------------------------------- | ----------------------------- |
+| `npm run start:dev`             | Start Nest with watch mode    |
+| `npm run build`                 | Compile to `dist/`            |
+| `npm run start:prod`            | Run compiled app              |
+| `npm run lint`                  | ESLint with auto-fix          |
+| `npm run format`                | Prettier write                |
+| `npm test`                      | Unit tests                    |
+| `npm run prisma:generate`       | Regenerate Prisma client      |
+| `npm run prisma:migrate`        | Create/apply dev migration    |
+| `npm run prisma:migrate:deploy` | Apply migrations in CI/prod   |
+| `npm run prisma:studio`         | Open Prisma Studio            |
+| `npm run db:reset`              | Drop + recreate DB (dev only) |
 
 ## Project layout
 
@@ -71,7 +71,7 @@ src/
     auth/                      # placeholder (NotImplementedException)
     user/                      # placeholder
     game/                      # placeholder
-    payments/                  # placeholder
+    wallet/                  # placeholder
     mock/                      # working CRUD sample
       dto/
       entities/

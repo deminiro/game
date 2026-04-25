@@ -1,17 +1,17 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { CqrsModule } from '@nestjs/cqrs';
-import { LoggerModule } from 'nestjs-pino';
 import { AppConfigModule } from '@/config/app-config.module';
 import { AppConfigService } from '@/config/app-config.service';
 import { envValidationSchema } from '@/config/env.validation';
 import { PrismaModule } from '@/database/prisma.module';
 import { HealthModule } from '@/health/health.module';
 import { AuthModule } from '@/modules/auth/auth.module';
-import { UserModule } from '@/modules/user/user.module';
 import { GameModule } from '@/modules/game/game.module';
-import { PaymentsModule } from '@/modules/payments/payments.module';
 import { MockModule } from '@/modules/mock/mock.module';
+import { UserModule } from '@/modules/user/user.module';
+import { WalletModule } from '@/modules/wallet/wallet.module';
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { CqrsModule } from '@nestjs/cqrs';
+import { LoggerModule } from 'nestjs-pino';
 
 @Module({
   imports: [
@@ -53,7 +53,7 @@ import { MockModule } from '@/modules/mock/mock.module';
     AuthModule,
     UserModule,
     GameModule,
-    PaymentsModule,
+    WalletModule,
     MockModule,
   ],
 })
