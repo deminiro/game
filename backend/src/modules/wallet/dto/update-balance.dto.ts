@@ -1,25 +1,17 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsEnum, IsInt, Max, Min } from 'class-validator';
+import { BalanceOperation } from '../types/enums/balance-operations';
 
-export class UpdateWalletBalancekDto {
-  @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 20 })
-  @IsOptional()
+export class UpdateWalletBalanceDto {
+  @ApiProperty({ minimum: 1, maximum: 100 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(100)
-  take: number = 20;
+  value!: number;
 
-  @ApiPropertyOptional({ minimum: 0, default: 0 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  skip: number = 0;
-
-  @ApiPropertyOptional({ description: 'Case-insensitive name filter' })
-  @IsOptional()
-  @IsString()
-  search?: string;
+  @ApiProperty({ enum: BalanceOperation })
+  @IsEnum(BalanceOperation)
+  type!: BalanceOperation;
 }

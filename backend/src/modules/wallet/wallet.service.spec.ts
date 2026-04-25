@@ -39,8 +39,7 @@ describe('WalletService', () => {
   });
 
   it('add 50 to balance', async () => {
-    const result = await service.updateBalance({
-      userId: sample.userId,
+    const result = await service.updateBalance(sample.userId, {
       value: 50,
       type: BalanceOperation.ADD,
     });
@@ -48,8 +47,7 @@ describe('WalletService', () => {
   });
 
   it('remove 30 from balance', async () => {
-    const result = await service.updateBalance({
-      userId: sample.userId,
+    const result = await service.updateBalance(sample.userId, {
       value: 30,
       type: BalanceOperation.REMOVE,
     });

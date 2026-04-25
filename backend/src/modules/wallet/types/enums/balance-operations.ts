@@ -1,4 +1,4 @@
-export const enum BalanceOperation {
+export enum BalanceOperation {
   ADD = 'ADD',
   REMOVE = 'REMOVE',
 }

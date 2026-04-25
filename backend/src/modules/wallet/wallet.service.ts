@@ -1,6 +1,6 @@
 import { PrismaService } from '@/database/prisma.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { balanceOperations } from './constants/balance-operations';
+import { Prisma } from '@prisma/client';
 import { WalletEntity } from './entities/wallet.entity';
 import { BalanceOperation } from './types/enums/balance-operations';
 
@@ -8,26 +8,34 @@ import { BalanceOperation } from './types/enums/balance-operations';
 export class WalletService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async updateBalance({
-    userId,
-    value,
-    type,
-  }: {
-    userId: string;
-    value: number;
-    type: BalanceOperation;
-  }): Promise<number> {
-    const wallet = await this.ensureExistsByUserId(userId);
+  async updateBalance(
+    userId: string,
+    {
+      value,
+      type,
+    }: {
+      value: number;
+      type: BalanceOperation;
+    },
+  ): Promise<number> {
+    const data =
+      type === BalanceOperation.ADD
+        ? { balance: { increment: value } }
+        : { balance: { decrement: value } };
 
-    const result = await this.prisma.wallet.update({
-      where: { userId },
-      data: {
-        ...wallet,
-        balance: balanceOperations[type](wallet.balance, value),
-      },
-    });
+    try {
+      const result = await this.prisma.wallet.update({
+        where: { userId },
+        data,
+      });
 
-    return result.balance;
+      return result.balance;
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+        throw new NotFoundException(`Wallet with userId ${userId} is not exist`);
+      }
+      throw e;
+    }
   }
 
   async getBalanceByUserId(userId: string): Promise<number> {
