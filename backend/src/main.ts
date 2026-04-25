@@ -1,14 +1,20 @@
 import 'reflect-metadata';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
+import session from 'express-session';
+import ConnectPgSimple from 'connect-pg-simple';
+import passport from 'passport';
 import { AppModule } from '@/app.module';
 import { AppConfigService } from '@/config/app-config.service';
 import { AllExceptionsFilter } from '@/common/filters/all-exceptions.filter';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
 
   const logger = app.get(Logger);
   app.useLogger(logger);
@@ -20,6 +26,34 @@ async function bootstrap(): Promise<void> {
     type: VersioningType.URI,
     defaultVersion: config.apiVersion,
   });
+
+  if (config.cookieSecure) {
+    app.set('trust proxy', 1);
+  }
+
+  const PgStore = ConnectPgSimple(session);
+  app.use(
+    session({
+      store: new PgStore({
+        conString: config.databaseUrl,
+        tableName: 'session',
+        createTableIfMissing: true,
+      }),
+      secret: config.sessionSecret,
+      resave: false,
+      saveUninitialized: false,
+      rolling: true,
+      cookie: {
+        httpOnly: true,
+        secure: config.cookieSecure,
+        sameSite: config.cookieSameSite,
+        domain: config.cookieDomain,
+        maxAge: config.sessionTtlMs,
+      },
+    }),
+  );
+  app.use(passport.initialize());
+  app.use(passport.session());
 
   app.useGlobalPipes(
     new ValidationPipe({

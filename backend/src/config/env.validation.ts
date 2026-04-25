@@ -22,4 +22,13 @@ export const envValidationSchema = Joi.object({
   ARGON2_MEMORY_COST: Joi.number().integer().min(8).default(19456),
   ARGON2_TIME_COST: Joi.number().integer().min(1).default(2),
   ARGON2_PARALLELISM: Joi.number().integer().min(1).default(1),
+
+  SESSION_SECRET: Joi.string().min(16).required(),
+  SESSION_TTL_MS: Joi.number()
+    .integer()
+    .min(60_000)
+    .default(7 * 24 * 60 * 60 * 1000),
+  COOKIE_DOMAIN: Joi.string().allow('').default(''),
+  COOKIE_SECURE: Joi.boolean().default(false),
+  COOKIE_SAME_SITE: Joi.string().valid('lax', 'strict', 'none').default('lax'),
 });

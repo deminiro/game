@@ -60,4 +60,25 @@ export class AppConfigService {
   get argon2Parallelism(): number {
     return this.config.get<number>('ARGON2_PARALLELISM', 1);
   }
+
+  get sessionSecret(): string {
+    return this.config.getOrThrow<string>('SESSION_SECRET');
+  }
+
+  get sessionTtlMs(): number {
+    return this.config.get<number>('SESSION_TTL_MS', 7 * 24 * 60 * 60 * 1000);
+  }
+
+  get cookieDomain(): string | undefined {
+    const domain = this.config.get<string>('COOKIE_DOMAIN', '');
+    return domain ? domain : undefined;
+  }
+
+  get cookieSecure(): boolean {
+    return this.config.get<boolean>('COOKIE_SECURE', false);
+  }
+
+  get cookieSameSite(): 'lax' | 'strict' | 'none' {
+    return this.config.get<'lax' | 'strict' | 'none'>('COOKIE_SAME_SITE', 'lax');
+  }
 }
