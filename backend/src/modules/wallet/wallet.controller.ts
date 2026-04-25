@@ -1,5 +1,7 @@
+import { CurrentUser } from '@/modules/auth/decorators/current-user.decorator';
+import { AuthUserEntity } from '@/modules/auth/entities/auth-user.entity';
 import { WalletService } from '@/modules/wallet/wallet.service';
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('wallet')
@@ -12,9 +14,9 @@ export class WalletController {
   //   return this.walletService.createWalletIntent();
   // }
 
-  @Get('/:id')
+  @Get('/balance')
   @ApiOkResponse({ type: Number })
-  getBalanceByUserId(@Param('id') id: string) {
-    return this.walletService.getBalanceByUserId(id);
+  getBalanceByUserId(@CurrentUser() user: AuthUserEntity) {
+    return this.walletService.getBalanceByUserId(user.id);
   }
 }

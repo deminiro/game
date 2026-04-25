@@ -10,8 +10,10 @@ import { UserModule } from '@/modules/user/user.module';
 import { WalletModule } from '@/modules/wallet/wallet.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { CqrsModule } from '@nestjs/cqrs';
 import { LoggerModule } from 'nestjs-pino';
+import { AuthenticatedGuard } from '@/modules/auth/guards/authenticated.guard';
 
 @Module({
   imports: [
@@ -56,5 +58,6 @@ import { LoggerModule } from 'nestjs-pino';
     WalletModule,
     MockModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: AuthenticatedGuard }],
 })
 export class AppModule {}

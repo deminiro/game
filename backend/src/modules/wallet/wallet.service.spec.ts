@@ -1,8 +1,8 @@
 import { PrismaService } from '@/database/prisma.service';
 import { NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { BalanceOperation } from './constants/enums/balance-operations';
 import { WalletEntity } from './entities/wallet.entity';
+import { BalanceOperation } from './types/enums/balance-operations';
 import { WalletService } from './wallet.service';
 
 describe('WalletService', () => {
@@ -32,10 +32,7 @@ describe('WalletService', () => {
     };
 
     const moduleRef = await Test.createTestingModule({
-      providers: [
-        WalletService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [WalletService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = moduleRef.get(WalletService);
@@ -68,8 +65,6 @@ describe('WalletService', () => {
   it('throws NotFoundException when wallet does not exist', async () => {
     prisma.wallet.findUnique.mockResolvedValue(null);
 
-    await expect(service.getBalanceByUserId(sample.userId)).rejects.toThrow(
-      NotFoundException,
-    );
+    await expect(service.getBalanceByUserId(sample.userId)).rejects.toThrow(NotFoundException);
   });
 });

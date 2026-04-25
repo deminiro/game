@@ -1,8 +1,8 @@
 import { PrismaService } from '@/database/prisma.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { balanceOperations } from './constants/balance-operations';
-import { BalanceOperation } from './constants/enums/balance-operations';
 import { WalletEntity } from './entities/wallet.entity';
+import { BalanceOperation } from './types/enums/balance-operations';
 
 @Injectable()
 export class WalletService {

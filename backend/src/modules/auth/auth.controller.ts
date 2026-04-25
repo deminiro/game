@@ -12,10 +12,10 @@ import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from '@/modules/auth/auth.service';
 import { CurrentUser } from '@/modules/auth/decorators/current-user.decorator';
+import { Public } from '@/modules/auth/decorators/public.decorator';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
 import { RegisterDto } from '@/modules/auth/dto/register.dto';
 import { AuthUserEntity } from '@/modules/auth/entities/auth-user.entity';
-import { AuthenticatedGuard } from '@/modules/auth/guards/authenticated.guard';
 import { LocalAuthGuard } from '@/modules/auth/guards/local-auth.guard';
 
 @ApiTags('auth')
@@ -23,6 +23,7 @@ import { LocalAuthGuard } from '@/modules/auth/guards/local-auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('register')
   @ApiOkResponse({ type: AuthUserEntity })
   async register(
@@ -39,6 +40,7 @@ export class AuthController {
     return user;
   }
 
+  @Public()
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -50,7 +52,6 @@ export class AuthController {
     return user;
   }
 
-  @UseGuards(AuthenticatedGuard)
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(@Req() req: Request): Promise<void> {
@@ -62,7 +63,6 @@ export class AuthController {
     );
   }
 
-  @UseGuards(AuthenticatedGuard)
   @Get('me')
   @ApiOkResponse({ type: AuthUserEntity })
   me(@CurrentUser() user: AuthUserEntity): AuthUserEntity {
