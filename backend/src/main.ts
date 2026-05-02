@@ -37,7 +37,7 @@ async function bootstrap(): Promise<void> {
       store: new PgStore({
         conString: config.databaseUrl,
         tableName: 'session',
-        createTableIfMissing: true,
+        createTableIfMissing: false,
       }),
       secret: config.sessionSecret,
       resave: false,

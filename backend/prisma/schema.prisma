@@ -22,13 +22,15 @@ model Mock {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  displayName  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  wallet       Wallet?
+  id                  String   @id @default(uuid())
+  email               String   @unique
+  passwordHash        String
+  displayName         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  wallet              Wallet?
+  games               Game[]
+  gameUserStorages    GameUserStorage[]
 
   @@map("users")
 }
@@ -40,4 +42,63 @@ model Wallet {
   userId      String   @unique
 
   @@map("wallet")
+}
+
+/// Owned by connect-pg-simple. Prisma manages the schema; the library writes the rows.
+model Session {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
+  @@map("session")
+}
+
+enum GameStatus {
+  PREPARING
+  IN_PROGRESS
+  FINISHED
+
+  @@map("game_statuses")
+}
+
+enum GameMoveType {
+  NONE
+  MOVE
+  FISHING
+  MINING
+}
+
+model Game {
+  id              String      @id @default(uuid())
+
+  deck            String[]    @default([])
+  deckActionIdx   Int         @default(0)
+
+  players          User[]
+  activePlayerIdx  Int        @default(0)
+
+  moveType        GameMoveType
+  status          GameStatus  @default(IN_PROGRESS)
+
+  balance         Int
+  goals           Json[]      @default([])
+  completedGoalsIdx  Int[]    @default([])
+
+  storages        GameUserStorage[]
+
+  @@map("game")
+}
+
+model GameUserStorage {
+  id          String      @id @default(uuid())
+  limit       Int         @default(6)
+  items       String[]    
+
+  player      User        @relation(fields: [playerId], references: [id])
+  playerId      String
+  game        Game        @relation(fields: [gameId], references: [id])
+  gameId      String
+
+  @@map("game_user_storage")
 }

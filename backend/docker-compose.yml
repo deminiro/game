@@ -41,6 +41,11 @@ services:
       ARGON2_MEMORY_COST: '19456'
       ARGON2_TIME_COST: '2'
       ARGON2_PARALLELISM: '1'
+      SESSION_SECRET: dev-session-secret-change-me-please
+      SESSION_TTL_MS: '604800000'
+      COOKIE_DOMAIN: ''
+      COOKIE_SECURE: 'false'
+      COOKIE_SAME_SITE: lax
       CHOKIDAR_USEPOLLING: 'true'
       WATCHPACK_POLLING: 'true'
     ports:
@@ -55,6 +60,7 @@ services:
       - ./tsconfig.build.json:/app/tsconfig.build.json
       - ./package.json:/app/package.json
       - ./package-lock.json:/app/package-lock.json
+      - ./prisma.config.ts:/app/prisma.config.ts
       - api_node_modules:/app/node_modules
 
 volumes:
