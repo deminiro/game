@@ -1,8 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Game } from '@prisma/client';
+import { Game, GameStorageItem } from '@prisma/client';
 import { GameEventType } from '../types/enums/game-event-type.enum';
 import { GameStatus } from '../types/enums/game-status.enum';
-import { GameStorageItem } from '../types/enums/game-storage-item.enums';
 
 export class GameEntity implements Game {
   @ApiProperty({ format: 'uuid' })

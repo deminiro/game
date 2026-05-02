@@ -1,6 +1,6 @@
 import { PrismaService } from '@/database/prisma.service';
 import { Injectable, NotImplementedException } from '@nestjs/common';
-import { Game, GameUserStorage } from '@prisma/client';
+import { Game, GameStorageItem, GameUserStorage, Prisma } from '@prisma/client';
 import { AuthUserEntity } from '../auth/entities/auth-user.entity';
 import { MakeSessionMoveDto } from './dto/make-session-move.dto';
 import {
@@ -10,9 +10,10 @@ import {
   GameNotFoundException,
   GameNotJoinableException,
 } from './exceptions/game.exceptions';
+import { GameDice } from './helpers/game-dice.helper';
+import { GameStorage } from './helpers/game-storage.helper';
 import { GameEventType } from './types/enums/game-event-type.enum';
 import { GameStatus } from './types/enums/game-status.enum';
-import { GameStorageItem } from './types/enums/game-storage-item.enums';
 
 @Injectable()
 export class GameService {
@@ -124,20 +125,35 @@ export class GameService {
 
       switch (dto.type) {
         case GameEventType.FISHING:
-          return this.makeFishing(storage);
+          return this.makeFishing(tx, storage);
         case GameEventType.MINING:
-          return this.makeMining(storage);
+          return this.makeMining(tx, storage);
         default:
           return this.failedMove(storage);
       }
     });
   }
 
-  makeFishing(storage: GameUserStorage): ReturnType<GameService['makeSessionMove']> {
-    throw new NotImplementedException('GameService.makeSessionMove not implemented');
+  async makeFishing(
+    tx: Prisma.TransactionClient,
+    storage: GameUserStorage,
+  ): ReturnType<GameService['makeSessionMove']> {
+    if (new GameDice().isFailed()) return this.failedMove(storage);
+
+    const items = new GameStorage(storage).addNew(GameStorageItem.FISH);
+
+    const newStorage = await tx.gameUserStorage.update({
+      where: { id: storage.id },
+      data: { items },
+    });
+
+    return { pass: true, storage: newStorage };
   }
 
-  makeMining(storage: GameUserStorage): ReturnType<GameService['makeSessionMove']> {
+  makeMining(
+    tx: Prisma.TransactionClient,
+    storage: GameUserStorage,
+  ): ReturnType<GameService['makeSessionMove']> {
     throw new NotImplementedException('GameService.makeSessionMove not implemented');
   }
 

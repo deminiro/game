@@ -1,5 +1,6 @@
 import { PrismaService } from '@/database/prisma.service';
 import { Test } from '@nestjs/testing';
+import { GameStorageItem } from '@prisma/client';
 import { AuthUserEntity } from '../auth/entities/auth-user.entity';
 import { GameUserStorageEntity } from './entities/game-user-storage.enitiy';
 import { GameEntity } from './entities/game.entity';
@@ -7,7 +8,6 @@ import { ActiveGameExistsException } from './exceptions/game.exceptions';
 import { GameService } from './game.service';
 import { GameEventType } from './types/enums/game-event-type.enum';
 import { GameStatus } from './types/enums/game-status.enum';
-import { GameStorageItem } from './types/enums/game-storage-item.enums';
 
 describe('GameService', () => {
   let service: GameService;
@@ -200,5 +200,85 @@ describe('GameService', () => {
 
     expect(game.completedGoalsIdx).toContain(goalIdx);
     expect(game.completedGoalsIdx.length).toBe(1);
+  });
+
+  describe('makeFishing', () => {
+    const buildStorage = (overrides: Partial<GameUserStorageEntity> = {}): GameUserStorageEntity => ({
+      id: 's1',
+      limit: 6,
+      items: [],
+      playerId: user.id,
+      gameId: sample.id,
+      ...overrides,
+    });
+
+    let tx: { gameUserStorage: { update: jest.Mock } };
+
+    beforeEach(() => {
+      tx = {
+        gameUserStorage: {
+          update: jest.fn().mockImplementation(({ where, data }) => ({
+            id: where.id,
+            limit: 6,
+            items: data.items,
+            playerId: user.id,
+            gameId: sample.id,
+          })),
+        },
+      };
+    });
+
+    it('appends FISH and persists when dice succeeds', async () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.99);
+      const storage = buildStorage({ items: [] });
+
+      const result = await service.makeFishing(tx as never, storage);
+
+      expect(result.pass).toBe(true);
+      expect(result.storage.items).toEqual([GameStorageItem.FISH]);
+      expect(tx.gameUserStorage.update).toHaveBeenCalledWith({
+        where: { id: storage.id },
+        data: { items: [GameStorageItem.FISH] },
+      });
+    });
+
+    it('returns failedMove without writing when dice fails', async () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0);
+      const storage = buildStorage({ items: [GameStorageItem.MINERAL] });
+
+      const result = await service.makeFishing(tx as never, storage);
+
+      expect(result.pass).toBe(false);
+      expect(result.storage).toBe(storage);
+      expect(tx.gameUserStorage.update).not.toHaveBeenCalled();
+    });
+
+    it('drops the oldest item when storage is at the limit', async () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.99);
+      const storage = buildStorage({
+        limit: 3,
+        items: [GameStorageItem.MINERAL, GameStorageItem.FISH, GameStorageItem.MINERAL],
+      });
+
+      const result = await service.makeFishing(tx as never, storage);
+
+      expect(result.pass).toBe(true);
+      expect(result.storage.items).toEqual([
+        GameStorageItem.FISH,
+        GameStorageItem.MINERAL,
+        GameStorageItem.FISH,
+      ]);
+      expect(result.storage.items).toHaveLength(3);
+    });
+
+    it('does not mutate the input storage.items array', async () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.99);
+      const original = [GameStorageItem.MINERAL];
+      const storage = buildStorage({ items: original });
+
+      await service.makeFishing(tx as never, storage);
+
+      expect(original).toEqual([GameStorageItem.MINERAL]);
+    });
   });
 });

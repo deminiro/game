@@ -67,6 +67,15 @@ enum GameMoveType {
   MOVE
   FISHING
   MINING
+
+  @@map("game_move_type")
+}
+
+enum GameStorageItem {
+  FISH
+  MINERAL
+
+  @@map("game_storage_item")
 }
 
 model Game {
@@ -93,7 +102,7 @@ model Game {
 model GameUserStorage {
   id          String      @id @default(uuid())
   limit       Int         @default(6)
-  items       String[]    
+  items       GameStorageItem[]    
 
   player      User        @relation(fields: [playerId], references: [id])
   playerId      String
