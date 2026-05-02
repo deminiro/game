@@ -67,6 +67,28 @@ export class GameService {
     });
   }
 
+  async joinGame(user: AuthUserEntity, sessionId: string): Promise<Game> {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.game.findUnique({
+        where: { id: sessionId },
+        include: { players: { select: { id: true } } },
+      });
+
+      if (!existing) throw new NotFoundException(`Game with id ${sessionId} not found`);
+      if (existing.status !== GameStatus.PREPARING) {
+        throw new ConflictException('Game has already started or finished');
+      }
+      if (existing.players.some((p) => p.id === user.id)) {
+        throw new ConflictException('User already joined this game');
+      }
+
+      return tx.game.update({
+        where: { id: sessionId },
+        data: { players: { connect: { id: user.id } } },
+      });
+    });
+  }
+
   getSession(): Game {
     throw new NotImplementedException('GameService.getSession not implemented');
   }

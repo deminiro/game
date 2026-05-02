@@ -16,8 +16,8 @@ export class GameController {
   }
 
   @Put('sessions/:id/join')
-  joinSession(@CurrentUser() user: AuthUserEntity) {
-    return this.gameService.createSession(user);
+  joinSession(@Param() id: string, @CurrentUser() user: AuthUserEntity) {
+    return this.gameService.joinGame(user, id);
   }
 
   @Put('sessions/:id/start')
