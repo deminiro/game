@@ -89,6 +89,10 @@ export class GameService {
     });
   }
 
+  async getSessions(): Promise<Game[]> {
+    return await this.prisma.game.findMany({ where: { status: GameStatus.PREPARING } });
+  }
+
   getSession(): Game {
     throw new NotImplementedException('GameService.getSession not implemented');
   }

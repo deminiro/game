@@ -17,6 +17,7 @@ describe('GameService', () => {
     game: {
       findFirst: jest.Mock;
       findUnique: jest.Mock;
+      findMany: jest.Mock;
       create: jest.Mock;
       update: jest.Mock;
     };
@@ -74,6 +75,7 @@ describe('GameService', () => {
       game: {
         findFirst: jest.fn().mockImplementation(() => currentGame),
         findUnique: jest.fn().mockImplementation(() => currentGame),
+        findMany: jest.fn().mockResolvedValue([sample]),
         create: jest.fn().mockResolvedValue({ ...sample }),
         update: jest.fn().mockImplementation(({ data }) => {
           currentGame = { ...currentGame, ...data };
@@ -114,6 +116,18 @@ describe('GameService', () => {
     currentGame = { ...currentGame, status: GameStatus.IN_PROGRESS };
 
     await expect(service.createSession(user)).rejects.toThrow(ConflictException);
+  });
+
+  it('List joinable sessions', async () => {
+    const preparing = { ...sample, id: 'a', status: GameStatus.PREPARING };
+    prisma.game.findMany.mockResolvedValueOnce([preparing]);
+
+    const result = await service.getSessions();
+
+    expect(prisma.game.findMany).toHaveBeenCalledWith({
+      where: { status: GameStatus.PREPARING },
+    });
+    expect(result).toEqual([preparing]);
   });
 
   it('Get active session', async () => {

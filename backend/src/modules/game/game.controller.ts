@@ -38,4 +38,9 @@ export class GameController {
   getCurrentSession() {
     return this.gameService.getSession();
   }
+
+  @Get('sessions')
+  getSessions() {
+    return this.gameService.getSessions();
+  }
 }
