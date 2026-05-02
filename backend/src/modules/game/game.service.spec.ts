@@ -133,7 +133,7 @@ describe('GameService', () => {
   it('Get active session', async () => {
     currentGame = { ...currentGame, status: GameStatus.IN_PROGRESS };
 
-    const result = await service.getSession();
+    const result = await service.getSession(user, currentGame.id);
 
     expect(result.status).toBe(GameStatus.IN_PROGRESS);
   });

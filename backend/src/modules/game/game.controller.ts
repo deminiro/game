@@ -34,9 +34,9 @@ export class GameController {
     return this.gameService.makeSessionMove(id, user, dto);
   }
 
-  @Get('sessions/current')
-  getCurrentSession() {
-    return this.gameService.getSession();
+  @Get('sessions/:id')
+  getCurrentSession(@Param() id: string, @CurrentUser() user: AuthUserEntity) {
+    return this.gameService.getSession(user, id);
   }
 
   @Get('sessions')

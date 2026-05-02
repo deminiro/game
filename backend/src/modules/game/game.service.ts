@@ -17,6 +17,23 @@ import { GameStorageItem } from './types/enums/game-storage-item.enums';
 export class GameService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getSessions(): Promise<Game[]> {
+    return await this.prisma.game.findMany({ where: { status: GameStatus.PREPARING } });
+  }
+
+  async getSession(user: AuthUserEntity, sessionId: string): Promise<Game> {
+    const existing = await this.prisma.game.findFirst({
+      where: {
+        id: sessionId,
+        players: { some: { id: user.id } },
+      },
+    });
+
+    if (!existing) throw new NotFoundException(`Game with id ${sessionId} not found`);
+
+    return existing;
+  }
+
   async createSession(user: AuthUserEntity): Promise<Game> {
     return await this.prisma.$transaction(async (tx) => {
       const existing = await tx.game.findFirst({
@@ -87,14 +104,6 @@ export class GameService {
         data: { players: { connect: { id: user.id } } },
       });
     });
-  }
-
-  async getSessions(): Promise<Game[]> {
-    return await this.prisma.game.findMany({ where: { status: GameStatus.PREPARING } });
-  }
-
-  getSession(): Game {
-    throw new NotImplementedException('GameService.getSession not implemented');
   }
 
   makeSessionMove(
