@@ -1,12 +1,12 @@
 import { PrismaService } from '@/database/prisma.service';
 import { Injectable, NotImplementedException } from '@nestjs/common';
-import { Game } from '@prisma/client';
+import { Game, GameUserStorage } from '@prisma/client';
 import { AuthUserEntity } from '../auth/entities/auth-user.entity';
 import { MakeSessionMoveDto } from './dto/make-session-move.dto';
-import { GameUserStorageEntity } from './entities/game-user-storage.enitiy';
 import {
   ActiveGameExistsException,
   AlreadyInGameException,
+  GameForbiddenMoveException,
   GameNotFoundException,
   GameNotJoinableException,
 } from './exceptions/game.exceptions';
@@ -101,19 +101,50 @@ export class GameService {
     });
   }
 
-  makeSessionMove(
+  async makeSessionMove(
     sessionId: string,
-    currentUser: AuthUserEntity,
+    user: AuthUserEntity,
     dto: MakeSessionMoveDto,
-  ): { pass: boolean; storage: GameUserStorageEntity } {
+  ): Promise<{ pass: boolean; storage: GameUserStorage }> {
+    return await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.game.findFirst({
+        where: {
+          id: sessionId,
+          players: { some: { id: user.id } },
+        },
+        include: {
+          storages: { where: { id: user.id } },
+        },
+      });
+
+      if (!existing || !existing.storages[0]) throw new GameNotFoundException(sessionId);
+      if (existing.status !== GameStatus.IN_PROGRESS) throw new GameForbiddenMoveException();
+
+      const [storage] = existing.storages;
+
+      switch (dto.type) {
+        case GameEventType.FISHING:
+          return this.makeFishing(storage);
+        case GameEventType.MINING:
+          return this.makeMining(storage);
+        default:
+          return this.failedMove(storage);
+      }
+    });
+  }
+
+  makeFishing(storage: GameUserStorage): ReturnType<GameService['makeSessionMove']> {
     throw new NotImplementedException('GameService.makeSessionMove not implemented');
   }
 
-  makeFishing(): ReturnType<GameService['makeSessionMove']> {
+  makeMining(storage: GameUserStorage): ReturnType<GameService['makeSessionMove']> {
     throw new NotImplementedException('GameService.makeSessionMove not implemented');
   }
 
-  makeMining(): ReturnType<GameService['makeSessionMove']> {
-    throw new NotImplementedException('GameService.makeSessionMove not implemented');
+  failedMove(storage: GameUserStorage): Awaited<ReturnType<GameService['makeSessionMove']>> {
+    return {
+      pass: false,
+      storage,
+    };
   }
 }

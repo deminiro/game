@@ -20,6 +20,12 @@ export class ActiveGameExistsException extends GameException {
   }
 }
 
+export class GameForbiddenMoveException extends GameException {
+  constructor() {
+    super('Move in the game is forbidden', HttpStatus.CONFLICT);
+  }
+}
+
 export class AlreadyInGameException extends GameException {
   constructor() {
     super('User already joined this game', HttpStatus.CONFLICT);
