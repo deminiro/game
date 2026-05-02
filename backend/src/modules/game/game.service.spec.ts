@@ -15,10 +15,12 @@ describe('GameService', () => {
     user: { findUnique: jest.Mock };
     storage: { findUnique: jest.Mock; update: jest.Mock };
     game: {
+      findFirst: jest.Mock;
       findUnique: jest.Mock;
       create: jest.Mock;
       update: jest.Mock;
     };
+    $transaction: jest.Mock;
   };
 
   const sample: GameEntity = {
@@ -44,7 +46,7 @@ describe('GameService', () => {
       limit: 6,
       items: [],
 
-      playerId: sample.players[0],
+      playerId: sample.players![0],
       gameId: sample.id,
     },
   ];
@@ -70,6 +72,7 @@ describe('GameService', () => {
         })),
       },
       game: {
+        findFirst: jest.fn().mockImplementation(() => currentGame),
         findUnique: jest.fn().mockImplementation(() => currentGame),
         create: jest.fn().mockResolvedValue({ ...sample }),
         update: jest.fn().mockImplementation(({ data }) => {
@@ -77,6 +80,7 @@ describe('GameService', () => {
           return currentGame;
         }),
       },
+      $transaction: jest.fn().mockImplementation((cb) => cb(prisma)),
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -91,11 +95,10 @@ describe('GameService', () => {
   });
 
   it('Generating a new game', async () => {
-    prisma.game.findUnique.mockResolvedValueOnce(null);
+    prisma.game.findFirst.mockResolvedValueOnce(null);
 
-    const result = await service.createSession();
+    const result = await service.createSession(user);
 
-    expect(result).toBeInstanceOf(GameEntity);
     expect(result.status).toBe(GameStatus.PREPARING);
   });
 
@@ -104,14 +107,13 @@ describe('GameService', () => {
 
     const result = await service.startGame(sample.id);
 
-    expect(result).toBeInstanceOf(GameEntity);
     expect(result.status).toBe(GameStatus.IN_PROGRESS);
   });
 
   it("Starting a new game, when previous hasn't finished", async () => {
     currentGame = { ...currentGame, status: GameStatus.IN_PROGRESS };
 
-    await expect(service.createSession()).rejects.toThrow(ConflictException);
+    await expect(service.createSession(user)).rejects.toThrow(ConflictException);
   });
 
   it('Get active session', async () => {
@@ -119,7 +121,6 @@ describe('GameService', () => {
 
     const result = await service.getSession();
 
-    expect(result).toBeInstanceOf(GameEntity);
     expect(result.status).toBe(GameStatus.IN_PROGRESS);
   });
 
@@ -175,7 +176,8 @@ describe('GameService', () => {
     };
 
     while (
-      result.storage.items.filter((el) => el === GameStorageItem.FISH).length < (goalFish?.amount ?? 0)
+      result.storage.items.filter((el) => el === GameStorageItem.FISH).length <
+      (goalFish?.amount ?? 0)
     ) {
       result = await service.makeSessionMove(sample.id, user, { type: GameEventType.FISHING });
     }

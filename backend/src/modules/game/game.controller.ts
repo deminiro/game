@@ -1,5 +1,5 @@
 import { GameService } from '@/modules/game/game.service';
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthUserEntity } from '../auth/entities/auth-user.entity';
@@ -11,8 +11,13 @@ export class GameController {
   constructor(private readonly gameService: GameService) {}
 
   @Post('sessions')
-  createSession() {
-    return this.gameService.createSession();
+  createSession(@CurrentUser() user: AuthUserEntity) {
+    return this.gameService.createSession(user);
+  }
+
+  @Put('sessions/:id/join')
+  joinSession(@CurrentUser() user: AuthUserEntity) {
+    return this.gameService.createSession(user);
   }
 
   @Post('sessions/:id/move')

@@ -14,7 +14,7 @@ export class GameEntity implements Game {
   @ApiProperty()
   deckActionIdx!: number;
 
-  players!: string[];
+  players?: string[];
 
   @ApiProperty()
   activePlayerIdx!: number;
@@ -34,5 +34,5 @@ export class GameEntity implements Game {
   @ApiProperty()
   completedGoalsIdx!: number[];
 
-  storages!: string[];
+  storages?: string[];
 }
