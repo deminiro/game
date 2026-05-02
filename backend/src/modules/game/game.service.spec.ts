@@ -1,9 +1,9 @@
 import { PrismaService } from '@/database/prisma.service';
-import { ConflictException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AuthUserEntity } from '../auth/entities/auth-user.entity';
 import { GameUserStorageEntity } from './entities/game-user-storage.enitiy';
 import { GameEntity } from './entities/game.entity';
+import { ActiveGameExistsException } from './exceptions/game.exceptions';
 import { GameService } from './game.service';
 import { GameEventType } from './types/enums/game-event-type.enum';
 import { GameStatus } from './types/enums/game-status.enum';
@@ -115,7 +115,7 @@ describe('GameService', () => {
   it("Starting a new game, when previous hasn't finished", async () => {
     currentGame = { ...currentGame, status: GameStatus.IN_PROGRESS };
 
-    await expect(service.createSession(user)).rejects.toThrow(ConflictException);
+    await expect(service.createSession(user)).rejects.toThrow(ActiveGameExistsException);
   });
 
   it('List joinable sessions', async () => {

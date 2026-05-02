@@ -1,14 +1,15 @@
 import { PrismaService } from '@/database/prisma.service';
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-  NotImplementedException,
-} from '@nestjs/common';
+import { Injectable, NotImplementedException } from '@nestjs/common';
 import { Game } from '@prisma/client';
 import { AuthUserEntity } from '../auth/entities/auth-user.entity';
 import { MakeSessionMoveDto } from './dto/make-session-move.dto';
 import { GameUserStorageEntity } from './entities/game-user-storage.enitiy';
+import {
+  ActiveGameExistsException,
+  AlreadyInGameException,
+  GameNotFoundException,
+  GameNotJoinableException,
+} from './exceptions/game.exceptions';
 import { GameEventType } from './types/enums/game-event-type.enum';
 import { GameStatus } from './types/enums/game-status.enum';
 import { GameStorageItem } from './types/enums/game-storage-item.enums';
@@ -29,7 +30,7 @@ export class GameService {
       },
     });
 
-    if (!existing) throw new NotFoundException(`Game with id ${sessionId} not found`);
+    if (!existing) throw new GameNotFoundException(sessionId);
 
     return existing;
   }
@@ -43,7 +44,7 @@ export class GameService {
         },
       });
 
-      if (existing) throw new ConflictException('Game already exist');
+      if (existing) throw new ActiveGameExistsException();
 
       const game = await tx.game.create({
         data: {
@@ -72,10 +73,8 @@ export class GameService {
         },
       });
 
-      if (!existing) throw new NotFoundException(`Game with id ${sessionId} not found`);
-      if (existing.status !== GameStatus.PREPARING) {
-        throw new ConflictException('Game has already started or finished');
-      }
+      if (!existing) throw new GameNotFoundException(sessionId);
+      if (existing.status !== GameStatus.PREPARING) throw new GameNotJoinableException();
 
       return tx.game.update({
         where: { id: sessionId },
@@ -91,13 +90,9 @@ export class GameService {
         include: { players: { select: { id: true } } },
       });
 
-      if (!existing) throw new NotFoundException(`Game with id ${sessionId} not found`);
-      if (existing.status !== GameStatus.PREPARING) {
-        throw new ConflictException('Game has already started or finished');
-      }
-      if (existing.players.some((p) => p.id === user.id)) {
-        throw new ConflictException('User already joined this game');
-      }
+      if (!existing) throw new GameNotFoundException(sessionId);
+      if (existing.status !== GameStatus.PREPARING) throw new GameNotJoinableException();
+      if (existing.players.some((p) => p.id === user.id)) throw new AlreadyInGameException();
 
       return tx.game.update({
         where: { id: sessionId },
