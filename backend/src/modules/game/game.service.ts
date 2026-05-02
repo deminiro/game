@@ -1,5 +1,5 @@
 import { PrismaService } from '@/database/prisma.service';
-import { Injectable, NotImplementedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Game, GameStorageItem, GameUserStorage, Prisma } from '@prisma/client';
 import { AuthUserEntity } from '../auth/entities/auth-user.entity';
 import { MakeSessionMoveDto } from './dto/make-session-move.dto';
@@ -150,11 +150,20 @@ export class GameService {
     return { pass: true, storage: newStorage };
   }
 
-  makeMining(
+  async makeMining(
     tx: Prisma.TransactionClient,
     storage: GameUserStorage,
   ): ReturnType<GameService['makeSessionMove']> {
-    throw new NotImplementedException('GameService.makeSessionMove not implemented');
+    if (new GameDice().isFailed()) return this.failedMove(storage);
+
+    const items = new GameStorage(storage).addNew(GameStorageItem.MINERAL);
+
+    const newStorage = await tx.gameUserStorage.update({
+      where: { id: storage.id },
+      data: { items },
+    });
+
+    return { pass: true, storage: newStorage };
   }
 
   failedMove(storage: GameUserStorage): Awaited<ReturnType<GameService['makeSessionMove']>> {

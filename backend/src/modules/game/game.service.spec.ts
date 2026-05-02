@@ -281,4 +281,84 @@ describe('GameService', () => {
       expect(original).toEqual([GameStorageItem.MINERAL]);
     });
   });
+
+  describe('makeMining', () => {
+    const buildStorage = (overrides: Partial<GameUserStorageEntity> = {}): GameUserStorageEntity => ({
+      id: 's1',
+      limit: 6,
+      items: [],
+      playerId: user.id,
+      gameId: sample.id,
+      ...overrides,
+    });
+
+    let tx: { gameUserStorage: { update: jest.Mock } };
+
+    beforeEach(() => {
+      tx = {
+        gameUserStorage: {
+          update: jest.fn().mockImplementation(({ where, data }) => ({
+            id: where.id,
+            limit: 6,
+            items: data.items,
+            playerId: user.id,
+            gameId: sample.id,
+          })),
+        },
+      };
+    });
+
+    it('appends MINERAL and persists when dice succeeds', async () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.99);
+      const storage = buildStorage({ items: [] });
+
+      const result = await service.makeMining(tx as never, storage);
+
+      expect(result.pass).toBe(true);
+      expect(result.storage.items).toEqual([GameStorageItem.MINERAL]);
+      expect(tx.gameUserStorage.update).toHaveBeenCalledWith({
+        where: { id: storage.id },
+        data: { items: [GameStorageItem.MINERAL] },
+      });
+    });
+
+    it('returns failedMove without writing when dice fails', async () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0);
+      const storage = buildStorage({ items: [GameStorageItem.FISH] });
+
+      const result = await service.makeMining(tx as never, storage);
+
+      expect(result.pass).toBe(false);
+      expect(result.storage).toBe(storage);
+      expect(tx.gameUserStorage.update).not.toHaveBeenCalled();
+    });
+
+    it('drops the oldest item when storage is at the limit', async () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.99);
+      const storage = buildStorage({
+        limit: 3,
+        items: [GameStorageItem.FISH, GameStorageItem.MINERAL, GameStorageItem.FISH],
+      });
+
+      const result = await service.makeMining(tx as never, storage);
+
+      expect(result.pass).toBe(true);
+      expect(result.storage.items).toEqual([
+        GameStorageItem.MINERAL,
+        GameStorageItem.FISH,
+        GameStorageItem.MINERAL,
+      ]);
+      expect(result.storage.items).toHaveLength(3);
+    });
+
+    it('does not mutate the input storage.items array', async () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.99);
+      const original = [GameStorageItem.FISH];
+      const storage = buildStorage({ items: original });
+
+      await service.makeMining(tx as never, storage);
+
+      expect(original).toEqual([GameStorageItem.FISH]);
+    });
+  });
 });
