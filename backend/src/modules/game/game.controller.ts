@@ -20,6 +20,11 @@ export class GameController {
     return this.gameService.createSession(user);
   }
 
+  @Put('sessions/:id/start')
+  startSession(@Param() id: string, @CurrentUser() user: AuthUserEntity) {
+    return this.gameService.startGame(user, id);
+  }
+
   @Post('sessions/:id/move')
   makeSessionMove(
     @Param() id: string,

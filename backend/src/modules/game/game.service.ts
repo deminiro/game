@@ -1,10 +1,14 @@
 import { PrismaService } from '@/database/prisma.service';
-import { ConflictException, Injectable, NotImplementedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  NotImplementedException,
+} from '@nestjs/common';
 import { Game } from '@prisma/client';
 import { AuthUserEntity } from '../auth/entities/auth-user.entity';
 import { MakeSessionMoveDto } from './dto/make-session-move.dto';
 import { GameUserStorageEntity } from './entities/game-user-storage.enitiy';
-import { GameEntity } from './entities/game.entity';
 import { GameEventType } from './types/enums/game-event-type.enum';
 import { GameStatus } from './types/enums/game-status.enum';
 import { GameStorageItem } from './types/enums/game-storage-item.enums';
@@ -14,7 +18,7 @@ export class GameService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createSession(user: AuthUserEntity): Promise<Game> {
-    return this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       const existing = await tx.game.findFirst({
         where: {
           status: { not: GameStatus.FINISHED },
@@ -42,11 +46,28 @@ export class GameService {
     });
   }
 
-  startGame(sessionId: string): GameEntity {
-    throw new NotImplementedException('GameService.createSession not implemented');
+  async startGame(user: AuthUserEntity, sessionId: string): Promise<Game> {
+    return await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.game.findFirst({
+        where: {
+          id: sessionId,
+          players: { some: { id: user.id } },
+        },
+      });
+
+      if (!existing) throw new NotFoundException(`Game with id ${sessionId} not found`);
+      if (existing.status !== GameStatus.PREPARING) {
+        throw new ConflictException('Game has already started or finished');
+      }
+
+      return tx.game.update({
+        where: { id: sessionId },
+        data: { status: GameStatus.IN_PROGRESS },
+      });
+    });
   }
 
-  getSession(): GameEntity {
+  getSession(): Game {
     throw new NotImplementedException('GameService.getSession not implemented');
   }
 

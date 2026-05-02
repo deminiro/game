@@ -105,7 +105,7 @@ describe('GameService', () => {
   it('Starting a new game', async () => {
     currentGame = { ...currentGame, status: GameStatus.PREPARING };
 
-    const result = await service.startGame(sample.id);
+    const result = await service.startGame(user, sample.id);
 
     expect(result.status).toBe(GameStatus.IN_PROGRESS);
   });
