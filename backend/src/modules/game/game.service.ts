@@ -121,20 +121,31 @@ export class GameService {
       if (!existing || !existing.storages[0]) throw new GameNotFoundException(sessionId);
       if (existing.status !== GameStatus.IN_PROGRESS) throw new GameForbiddenMoveException();
 
-      const [storage] = existing.storages;
+      const moveResult = await this.makeMove(tx, existing.storages[0], dto);
 
-      switch (dto.type) {
-        case GameEventType.FISHING:
-          return this.makeFishing(tx, storage);
-        case GameEventType.MINING:
-          return this.makeMining(tx, storage);
-        default:
-          return this.failedMove(storage);
-      }
+      // validate next allowed step
+      // ...
+
+      return moveResult;
     });
   }
 
-  async makeFishing(
+  private async makeMove(
+    tx: Prisma.TransactionClient,
+    storage: GameUserStorage,
+    dto: MakeSessionMoveDto,
+  ): ReturnType<GameService['makeSessionMove']> {
+    switch (dto.type) {
+      case GameEventType.FISHING:
+        return this.makeFishing(tx, storage);
+      case GameEventType.MINING:
+        return this.makeMining(tx, storage);
+      default:
+        return this.failedMove(storage);
+    }
+  }
+
+  private async makeFishing(
     tx: Prisma.TransactionClient,
     storage: GameUserStorage,
   ): ReturnType<GameService['makeSessionMove']> {
@@ -150,7 +161,7 @@ export class GameService {
     return { pass: true, storage: newStorage };
   }
 
-  async makeMining(
+  private async makeMining(
     tx: Prisma.TransactionClient,
     storage: GameUserStorage,
   ): ReturnType<GameService['makeSessionMove']> {
@@ -166,7 +177,7 @@ export class GameService {
     return { pass: true, storage: newStorage };
   }
 
-  failedMove(storage: GameUserStorage): Awaited<ReturnType<GameService['makeSessionMove']>> {
+  private failedMove(storage: GameUserStorage): Awaited<ReturnType<GameService['makeSessionMove']>> {
     return {
       pass: false,
       storage,
