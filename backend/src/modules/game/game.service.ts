@@ -22,6 +22,10 @@ import { GameStorage } from './helpers/game-storage.helper';
 import { GameEventType } from './types/enums/game-event-type.enum';
 import { GameGoal } from './types/game-goal.type';
 
+type StorageTx = {
+  gameUserStorage: Pick<Prisma.TransactionClient['gameUserStorage'], 'update'>;
+};
+
 @Injectable()
 export class GameService {
   constructor(private readonly prisma: PrismaService) {}
@@ -216,8 +220,8 @@ export class GameService {
     }
   }
 
-  private async makeFishing(
-    tx: Prisma.TransactionClient,
+  async makeFishing(
+    tx: StorageTx,
     storage: GameUserStorage,
   ): Promise<Awaited<ReturnType<GameService['makeSessionMove']>>['move']> {
     if (new GameDice().isFailed()) return this.failedMove(storage);
@@ -232,8 +236,8 @@ export class GameService {
     return { pass: true, storage: newStorage };
   }
 
-  private async makeMining(
-    tx: Prisma.TransactionClient,
+  async makeMining(
+    tx: StorageTx,
     storage: GameUserStorage,
   ): Promise<Awaited<ReturnType<GameService['makeSessionMove']>>['move']> {
     if (new GameDice().isFailed()) return this.failedMove(storage);
