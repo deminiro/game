@@ -24,10 +24,17 @@ describe('WalletService', () => {
     prisma = {
       wallet: {
         findUnique: jest.fn().mockResolvedValue(sample),
-        update: jest.fn().mockImplementation(({ data }) => ({
-          ...sample,
-          balance: data.balance,
-        })),
+        update: jest.fn().mockImplementation(({ data }) => {
+          const b = data.balance;
+          let balance = sample.balance;
+          if (b && typeof b === 'object') {
+            if ('increment' in b) balance += b.increment;
+            else if ('decrement' in b) balance -= b.decrement;
+          } else {
+            balance = b;
+          }
+          return { ...sample, balance };
+        }),
       },
     };
 
