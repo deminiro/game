@@ -16,18 +16,18 @@ export class GameController {
   }
 
   @Put('sessions/:id/join')
-  joinSession(@Param() id: string, @CurrentUser() user: AuthUserEntity) {
+  joinSession(@Param('id') id: string, @CurrentUser() user: AuthUserEntity) {
     return this.gameService.joinGame(user, id);
   }
 
   @Put('sessions/:id/start')
-  startSession(@Param() id: string, @CurrentUser() user: AuthUserEntity) {
+  startSession(@Param('id') id: string, @CurrentUser() user: AuthUserEntity) {
     return this.gameService.startGame(user, id);
   }
 
   @Post('sessions/:id/move')
   makeSessionMove(
-    @Param() id: string,
+    @Param('id') id: string,
     @CurrentUser() user: AuthUserEntity,
     @Body() dto: MakeSessionMoveDto,
   ) {
@@ -35,7 +35,7 @@ export class GameController {
   }
 
   @Get('sessions/:id')
-  getCurrentSession(@Param() id: string, @CurrentUser() user: AuthUserEntity) {
+  getCurrentSession(@Param('id') id: string, @CurrentUser() user: AuthUserEntity) {
     return this.gameService.getSession(user, id);
   }
 
