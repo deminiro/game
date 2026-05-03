@@ -1,5 +1,5 @@
 import { GameService } from '@/modules/game/game.service';
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthUserEntity } from '../auth/entities/auth-user.entity';
@@ -42,5 +42,10 @@ export class GameController {
   @Get('sessions')
   getSessions() {
     return this.gameService.getSessions();
+  }
+
+  @Delete('sessions/:id')
+  deleteSession(@Param('id') id: string, @CurrentUser() user: AuthUserEntity) {
+    return this.gameService.deleteSession(user, id);
   }
 }

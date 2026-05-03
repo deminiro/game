@@ -72,7 +72,7 @@ export class GameService {
     });
   }
 
-  async startGame(user: AuthUserEntity, sessionId: string): Promise<Game> {
+  async deleteSession(user: AuthUserEntity, sessionId: string): Promise<boolean> {
     return await this.prisma.$transaction(async (tx) => {
       const existing = await tx.game.findFirst({
         where: {
@@ -82,7 +82,37 @@ export class GameService {
       });
 
       if (!existing) throw new GameNotFoundException(sessionId);
+
+      await tx.gameUserStorage.deleteMany({ where: { gameId: existing.id } });
+      await tx.game.delete({ where: { id: existing.id } });
+
+      return true;
+    });
+  }
+
+  async startGame(user: AuthUserEntity, sessionId: string): Promise<Game> {
+    return await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.game.findFirst({
+        where: {
+          id: sessionId,
+          players: { some: { id: user.id } },
+        },
+        include: {
+          players: { select: { id: true } },
+        },
+      });
+
+      if (!existing) throw new GameNotFoundException(sessionId);
       if (existing.status !== GameStatus.PREPARING) throw new GameNotJoinableException();
+
+      await tx.gameUserStorage.createMany({
+        data: existing.players.map((player) => ({
+          playerId: player.id,
+          gameId: sessionId,
+          limit: 6,
+          items: [],
+        })),
+      });
 
       return tx.game.update({
         where: { id: sessionId },
@@ -271,7 +301,7 @@ export class GameService {
 
     return await tx.game.update({
       where: { id: game.id },
-      data: { completedGoalsIdx, result },
+      data: { completedGoalsIdx, result, status: GameStatus.FINISHED },
     });
   }
 }
