@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Game, GameStorageItem } from '@prisma/client';
+import { Game, GameResult } from '@prisma/client';
 import { GameEventType } from '../types/enums/game-event-type.enum';
 import { GameStatus } from '../types/enums/game-status.enum';
+import { GameGoal } from '../types/game-goal.type';
 
 export class GameEntity implements Game {
   @ApiProperty({ format: 'uuid' })
@@ -25,10 +26,13 @@ export class GameEntity implements Game {
   status!: GameStatus;
 
   @ApiProperty()
+  result!: GameResult;
+
+  @ApiProperty()
   balance!: number;
 
   @ApiProperty()
-  goals!: { amount: number; item: GameStorageItem }[];
+  goals!: GameGoal[];
 
   @ApiProperty()
   completedGoalsIdx!: number[];

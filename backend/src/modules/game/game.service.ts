@@ -1,6 +1,13 @@
 import { PrismaService } from '@/database/prisma.service';
 import { Injectable } from '@nestjs/common';
-import { Game, GameStorageItem, GameUserStorage, Prisma } from '@prisma/client';
+import {
+  Game,
+  GameResult,
+  GameStatus,
+  GameStorageItem,
+  GameUserStorage,
+  Prisma,
+} from '@prisma/client';
 import { AuthUserEntity } from '../auth/entities/auth-user.entity';
 import { MakeSessionMoveDto } from './dto/make-session-move.dto';
 import {
@@ -13,7 +20,7 @@ import {
 import { GameDice } from './helpers/game-dice.helper';
 import { GameStorage } from './helpers/game-storage.helper';
 import { GameEventType } from './types/enums/game-event-type.enum';
-import { GameStatus } from './types/enums/game-status.enum';
+import { GameGoal } from './types/game-goal.type';
 
 @Injectable()
 export class GameService {
@@ -106,35 +113,69 @@ export class GameService {
     sessionId: string,
     user: AuthUserEntity,
     dto: MakeSessionMoveDto,
-  ): Promise<{ pass: boolean; storage: GameUserStorage }> {
+  ): Promise<{
+    game: Pick<Game, 'activePlayerIdx' | 'deckActionIdx' | 'result' | 'status'>;
+    move: { pass: boolean; storage: GameUserStorage };
+  }> {
     return await this.prisma.$transaction(async (tx) => {
-      const existing = await tx.game.findFirst({
+      const game = await tx.game.findFirst({
         where: {
           id: sessionId,
           players: { some: { id: user.id } },
         },
         include: {
-          storages: { where: { id: user.id } },
+          players: { select: { id: true } },
+          storages: { where: { playerId: user.id } },
         },
       });
 
-      if (!existing || !existing.storages[0]) throw new GameNotFoundException(sessionId);
-      if (existing.status !== GameStatus.IN_PROGRESS) throw new GameForbiddenMoveException();
+      if (!game || !game.storages[0]) throw new GameNotFoundException(sessionId);
+      if (
+        game.status !== GameStatus.IN_PROGRESS ||
+        game.players[game.activePlayerIdx].id !== user.id
+      ) {
+        throw new GameForbiddenMoveException();
+      }
 
-      const moveResult = await this.makeMove(tx, existing.storages[0], dto);
+      const move = await this.makeMove(tx, game.storages[0], dto);
+      const nextGame = await this.validateNextGameStep(tx, game);
 
-      // validate next allowed step
-      // ...
-
-      return moveResult;
+      return { game: nextGame, move };
     });
+  }
+
+  private async validateNextGameStep(
+    tx: Prisma.TransactionClient,
+    game: Prisma.GameGetPayload<{ include: { players: { select: { id: true } } } }>,
+  ): Promise<Awaited<ReturnType<GameService['makeSessionMove']>>['game']> {
+    const playersCount = game.players.length;
+    const nextActivePlayerIdx = game.activePlayerIdx + 1;
+    let updatedGame: Game | null = null;
+
+    if (nextActivePlayerIdx === playersCount) {
+      updatedGame = await this.nextDeckCard(tx, game);
+    } else {
+      updatedGame = await tx.game.update({
+        where: { id: game.id },
+        data: {
+          activePlayerIdx: nextActivePlayerIdx,
+        },
+      });
+    }
+
+    return {
+      activePlayerIdx: updatedGame.activePlayerIdx,
+      deckActionIdx: updatedGame.deckActionIdx,
+      result: updatedGame.result,
+      status: updatedGame.status,
+    };
   }
 
   private async makeMove(
     tx: Prisma.TransactionClient,
     storage: GameUserStorage,
     dto: MakeSessionMoveDto,
-  ): ReturnType<GameService['makeSessionMove']> {
+  ): Promise<Awaited<ReturnType<GameService['makeSessionMove']>>['move']> {
     switch (dto.type) {
       case GameEventType.FISHING:
         return this.makeFishing(tx, storage);
@@ -148,7 +189,7 @@ export class GameService {
   private async makeFishing(
     tx: Prisma.TransactionClient,
     storage: GameUserStorage,
-  ): ReturnType<GameService['makeSessionMove']> {
+  ): Promise<Awaited<ReturnType<GameService['makeSessionMove']>>['move']> {
     if (new GameDice().isFailed()) return this.failedMove(storage);
 
     const items = new GameStorage(storage).addNew(GameStorageItem.FISH);
@@ -164,7 +205,7 @@ export class GameService {
   private async makeMining(
     tx: Prisma.TransactionClient,
     storage: GameUserStorage,
-  ): ReturnType<GameService['makeSessionMove']> {
+  ): Promise<Awaited<ReturnType<GameService['makeSessionMove']>>['move']> {
     if (new GameDice().isFailed()) return this.failedMove(storage);
 
     const items = new GameStorage(storage).addNew(GameStorageItem.MINERAL);
@@ -177,10 +218,60 @@ export class GameService {
     return { pass: true, storage: newStorage };
   }
 
-  private failedMove(storage: GameUserStorage): Awaited<ReturnType<GameService['makeSessionMove']>> {
+  private failedMove(
+    storage: GameUserStorage,
+  ): Awaited<ReturnType<GameService['makeSessionMove']>>['move'] {
     return {
       pass: false,
       storage,
     };
+  }
+
+  private async nextDeckCard(
+    tx: Prisma.TransactionClient,
+    game: Prisma.GameGetPayload<{ include: { players: { select: { id: true } } } }>,
+  ): Promise<Game> {
+    const deckAction = game.deckActionIdx + 1 < game.deck.length ? 'update-active' : 'finish-game';
+
+    switch (deckAction) {
+      case 'update-active':
+        return await tx.game.update({
+          where: { id: game.id },
+          data: {
+            deckActionIdx: { increment: 1 },
+            activePlayerIdx: 0,
+          },
+        });
+      case 'finish-game':
+        return await this.finishGame(tx, game);
+    }
+  }
+
+  private async finishGame(
+    tx: Prisma.TransactionClient,
+    game: Prisma.GameGetPayload<{ include: { players: { select: { id: true } } } }>,
+  ): Promise<Game> {
+    const storages = await tx.gameUserStorage.findMany({
+      where: { gameId: game.id },
+    });
+
+    const goals = game.goals as unknown as GameGoal[];
+    const completed = new Set(game.completedGoalsIdx);
+
+    goals.forEach((goal, idx) => {
+      if (completed.has(idx)) return;
+      const satisfied = storages.some(
+        (storage) => storage.items.filter((item) => item === goal.item).length >= goal.amount,
+      );
+      if (satisfied) completed.add(idx);
+    });
+
+    const completedGoalsIdx = Array.from(completed);
+    const result = completedGoalsIdx.length === goals.length ? GameResult.WON : GameResult.LOST;
+
+    return await tx.game.update({
+      where: { id: game.id },
+      data: { completedGoalsIdx, result },
+    });
   }
 }
