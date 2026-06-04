@@ -62,6 +62,14 @@ enum GameStatus {
   @@map("game_statuses")
 }
 
+enum GameResult {
+  NONE
+  WON
+  LOST
+
+  @@map("game_result")
+}
+
 enum GameMoveType {
   NONE
   MOVE
@@ -88,7 +96,8 @@ model Game {
   activePlayerIdx  Int        @default(0)
 
   moveType        GameMoveType
-  status          GameStatus  @default(IN_PROGRESS)
+  status          GameStatus  @default(PREPARING)
+  result          GameResult  @default(NONE)
 
   balance         Int
   goals           Json[]      @default([])
